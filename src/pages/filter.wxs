@@ -1,0 +1,5 @@
+var split = function (str,pattern) {
+    return str.split(pattern)
+}
+ 
+module.exports = { split: split};

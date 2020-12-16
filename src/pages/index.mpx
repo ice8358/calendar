@@ -1,0 +1,99 @@
+<template>
+    <view>
+        <view class='backtoday' bindtap='backtoday'>回到今天</view>
+        <view wx:if="{{!canlendarMode}}" class='timeline-mode' bindtap='showCalendar'>
+            日历模式
+        </view>
+        <view wx:if="{{canlendarMode}}" class='timeline-mode' bindtap='showTimeLine'>
+            时间轴模式
+        </view>
+        <calendar wx:if="{{canlendarMode}}" eventList="{{event}}" class="calendar"></calendar>
+        <timeline wx:if="{{!canlendarMode}}" eventList="{{event}}" class="timeline"></timeline>
+    </view>
+</template>
+
+<script>
+  import { createPage } from '@mpxjs/core'
+  import dataJson from './data'
+    dataJson.map((item)=>{
+        item.pubdate = item.pubdate.replace("年","-").replace("月","-").replace("日","");
+    })
+    // createPage({
+    //     onLoad () {}
+    // })
+    Component({
+        data: {
+            canlendarMode: false,
+            event: dataJson
+        },
+        methods: {
+            // 返回今天
+            backtoday() {
+                if (this.data.canlendarMode) {
+                    this.selectComponent(".calendar").backtoday();
+                } else {
+                    this.selectComponent(".timeline").backtoday();
+                }
+            },
+            // 时间轴模式
+            showTimeLine() {
+                console.log('切换时间轴模式')
+                this.setData({
+                    canlendarMode: false
+                })
+            },
+            // 日历模式
+            showCalendar() {
+                console.log('切换日历模式')
+                this.setData({
+                    canlendarMode: true
+                })
+            }
+        }
+    })
+</script>
+
+<script type="application/json">
+  {
+    "usingComponents": {
+      "calendar": "../components/calendar",
+      "timeline": "../components/timeline"
+    }
+  }
+</script>
+<style lang="stylus" scoped>
+    .backtoday {
+        position: absolute;
+        right: 0;
+        top: 15rpx;
+        padding: 0 10rpx;
+        padding-left: 20rpx;
+        height: 50rpx;
+        line-height: 50rpx;
+        border: 1px #52b8f5 solid;
+        border-right: none;
+        font-size: 28rpx;
+        border-top-left-radius: 50rpx;
+        border-bottom-left-radius: 50rpx;
+        color: #52b8f5;
+        background: rgba(82, 184, 245, 0.1);
+    }
+
+    .timeline-mode {
+        position: absolute;
+        left : 0;
+        top: 15rpx;
+        padding: 0 10rpx;
+        padding-left: 20rpx;
+        height: 50rpx;
+        line-height: 50rpx;
+        border: 1px #52b8f5 solid;
+        border-left: none;
+        font-size: 28rpx;
+        border-top-right-radius: 50rpx;
+        border-bottom-right-radius: 50rpx;
+        color: #52b8f5;
+        background: rgba(82, 184, 245, 0.1);
+    }
+
+</style>

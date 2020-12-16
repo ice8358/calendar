@@ -1,0 +1,377 @@
+<template>
+    <view class="timeline-box" >
+        <view class="timeline-wrap">
+            <view class="calendar-panel">
+                <view class="date-befor" data-id="0" data-type="month" bindtap='dataBefor'>
+                    <text class="iconfont">
+                        <text class='left color'></text>
+                    </text>
+                </view>
+                <view class="calendar-panel-box">
+                    <view>{{currYear}}年</view>
+                </view>
+                <view class="date-after" data-id="1" data-type="month" bindtap='dataBefor'>
+                    <text class="iconfont">
+                        <text class='right color'></text>
+                    </text>
+                </view>
+            </view>
+            <view class="timeline-content" wx:for="{{currEvent}}" wx:key="index">
+                <view class="left-line">
+                    <view class="left-event event-block">
+                        <wxs src="../pages/filter.wxs" module="filter" />
+                        <view class="month-point">{{filter.split(item.pubdate, '-')[1]}}.{{filter.split(item.pubdate, '-')[2]}}</view>
+                    </view>
+                </view>
+                <view class="right-event event-block">
+                    <view class="{{showEvent?'event-box':'no-event'}}">
+                        <block wx:for="{{item.content}}" wx:for-item="eventc" wx:for-index="cIndex" wx:key="cIndex">
+                            <view id="{{eventc._id}}" class="content-item" data-url="{{eventc.link}}" data-index="{{cIndex}}" bindtap="openUrl">
+                                <text class="event-title">{{eventc.title}}</text>
+                                <text class="event-desc">{{eventc.desc}}</text>
+                            </view>
+                        </block>
+                    </view>
+                </view>
+            </view>
+        </view>
+        <view class="month-area">
+            <block wx:for="{{currAllMonth}}" wx:key="index">
+                <view class="month-item" data-sign="{{item._id}}" bindtap="toMonth">{{item.month}}</view>
+            </block>
+        </view>
+        <view class="to-top" bindtap="toTop"></view>
+    </view>
+</template>
+
+<script>
+    import { createComponent } from '@mpxjs/core'
+    const date = new Date();
+    const year = date.getFullYear();
+    Component({
+        /**
+         * 组件的属性列表
+         * data [Date] 当前现实的月份
+         * eventList [Array] 所有有语录（事件）的天
+         */
+        properties: {
+            eventList: {
+                type: Array,
+                value: [],
+            },
+        },
+
+        /**
+         * 组件的初始数据
+         */
+        data: {
+            currYear: year,
+            currAllMonth: [],
+            currEvent: [],
+            indicatorDots: true,
+            vertical: false,
+            autoplay: false,
+            interval: 2000,
+            duration: 500,
+            currTop: 0,
+        },
+        ready() {
+            const event = this.data.eventList.filter((item)=>{
+                return item.pubdate.split('-')[0] == this.data.currYear;
+            })
+            this.setData({
+                currEvent: event
+            })
+            this.getAllMonth();
+        },
+        /**
+         * 组件的方法列表
+         */
+        methods: {
+            // 滚动到当前月份
+            toMonth(e) {
+                const sign = e.currentTarget.dataset.sign;
+                const query = wx.createSelectorQuery().in(this);
+                const ele = query.select('#'+sign);
+                ele.boundingClientRect(rect=>{
+                    let scroll = 0;
+                    console.log('rect:',rect)
+                    if (this.data.currTop) {
+                        console.log('this.data.currTop', this.data.currTop)
+                        scroll = this.data.currTop + rect.top
+                        console.log('scroll', scroll)
+                    } else {
+                        scroll = rect.top
+                    }
+                    wx.pageScrollTo({
+                        scrollTop: scroll,
+                        selector: '#'+sign,
+                    })
+                    this.setData({
+                        currTop: scroll - 30
+                    })
+                }).exec()
+            },
+            // 获取当年所有有事件的月份
+            getAllMonth() {
+                let allMonth = [];
+                let tempArr = [];
+                this.data.currEvent.forEach((item)=>{
+                    let mon = item.pubdate.split('-')[1];
+                    if (allMonth.indexOf(mon) == -1) {
+                        allMonth.push(mon);
+                        tempArr.push({
+                            _id: item.content[0]._id,
+                            month: mon
+                        });
+                    }
+                })
+                this.setData({
+                    currAllMonth: tempArr
+                })
+            },
+            // 返回今天
+            backtoday() {
+                this.setData({
+                    currYear: year
+                })
+                this.getCurrEvent(year)
+            },
+            // 前一天|| 后一天
+            dataBefor(e) {
+                let num = this.data.currYear;
+                let types = e.currentTarget.dataset.type;
+
+                if (e.currentTarget.dataset.id === "0") {
+                    num -= 1;
+                } else {
+                    num += 1
+                }
+                this.setData({
+                    currYear: num
+                })
+                this.getCurrEvent(num)
+            },
+            getCurrEvent(year) {
+                const event = this.data.eventList.filter((item)=>{
+                    return item.pubdate.split('-')[0] == year;
+                })
+                this.setData({
+                    currEvent: event
+                })
+            },
+            // 置顶
+            toTop() {
+                wx.pageScrollTo({
+                    scrollTop: 0,
+                    duration: 300
+                })
+            },
+            // 打开url
+            openUrl(e) {
+                wx.navigateTo({
+                    url: e.currentTarget.dataset.url,
+                    events: {
+                        // 为指定事件添加一个监听器，获取被打开页面传送到当前页面的数据
+                        acceptDataFromOpenedPage: function(data) {
+                            console.log('acceptDataFromOpenedPage:',data)
+                        },
+                        someEvent: function(data) {
+                            console.log('someEvent:',data)
+                        }
+                    },
+                    success: function(res) {
+                        // 通过eventChannel向被打开页面传送数据
+                        // res.eventChannel.emit('acceptDataFromOpenerPage', { data: 'test' })
+                    }
+                })
+            }
+        }
+    })
+</script>
+
+<style lang="stylus">
+    .month-area {
+        position: fixed;
+        top: 90px;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        width: 26px;
+        height: 380px;
+        z-index: 9;
+        background: rgba(255,255,255,.8);
+    }
+    .month-item {
+        width: 26px;
+        height: 26px;
+        text-align: center;
+        line-height: 26px;
+        color: #ccc;
+        font-size: 12px;
+        border-bottom: 1px solid #f2f2f2;
+    }
+    .to-top {
+        position: fixed;
+        right: 20px;
+        bottom: 25px;
+        width: 36px;
+        height: 36px;
+        background-image: url('./images/top.png');
+        background-repeat: no-repeat;
+        background-size: cover;
+        z-index: 999;
+        background-color: rgba(255,255,255,.8);
+        border-radius: 50%;
+    }
+    .timeline-box {
+        width: 100%;
+        height: 100vh;
+        background: #ffffff;
+        padding-top: 100rpx;
+        box-sizing: border-box;
+    }
+    .calendar-panel {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32rpx;
+        height: 80rpx;
+    }
+    .date-befor, .date-after {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 80rpx;
+        width: 80rpx;
+        text-align: center;
+        line-height: 80rpx;
+    }
+
+    .timeline-wrap {
+        border-top: 1px #f5f5f5 solid;
+        padding-top: 10px;
+    }
+    .timeline-content {
+        display: flex;
+        justify-content: space-between;
+    }
+    .month-point {
+        position absolute;
+        z-index 2;
+        width: 120rpx;
+        height: 120rpx;
+        background: #f40;
+        color: #fff;
+        font-size: 16px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 120rpx;
+    }
+    .left-line {
+        margin-left: 10px;
+        position relative;
+    }
+    .left-line::before {
+        position absolute;
+        left 60rpx;
+        width: 2px;
+        height: 100%;
+        background: #f40;
+        content: '';
+    }
+    .timeline-content:last-child .left-line::before {
+        height: 0;
+    }
+    .event-block {
+        overflow hidden;
+    }
+    .left-event {
+        width: 120rpx;
+        height 120rpx;
+        text-align center;
+        line-height 120rpx;
+    }
+    .right-event {
+        margin-right: 36px;
+        margin-left 16px;
+        flex: 1;
+        overflow hidden;
+    }
+    .event-title {
+        text-align: left;
+        overflow : hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        font-weight: 700;
+        font-size: 15px;
+        color: #000;
+    }
+    .event-desc {
+        text-align: left;
+        font-weight: 100;
+        font-size: 14px;
+        color: #666;
+        overflow : hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        text-indent: 2em;
+        margin-top: 5px;
+    }
+    .content-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #ccc;
+    }
+    .event-img {
+        display block;
+        width: 100%;
+        margin-top: 10px;
+        max-height: 100%;
+    }
+    
+    .iconfont {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        color: #52b8f5;
+        width: 53rpx;
+        height: 53rpx;
+    }
+
+    .iconfont .left, .iconfont .right {
+        display: block;
+        width: 0;
+        height: 0;
+        border-top: 20rpx solid transparent;
+        border-bottom: 20rpx solid transparent;
+    }
+
+    .iconfont .left {
+        border-right: 40rpx solid transparent;
+    }
+
+    .iconfont .right {
+        border-left: 40rpx solid transparent;
+    }
+
+    .iconfont .left.color {
+        border-right-color: #52b8f5;
+    }
+
+    .iconfont .right.color {
+        border-left-color: #52b8f5;
+    }
+
+</style>
+
+<script type="application/json">
+  {
+    "component": true
+  }
+</script>
